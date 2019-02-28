@@ -5,7 +5,7 @@ import * as serviceWorker from './serviceWorker';
 
 function Square(props) {
     return (
-        <button className="square" onClick={props.onClick}>
+        <button className="square" id = {props.number} onClick={props.onClick}>
             {props.value}
         </button>
     );
@@ -17,6 +17,7 @@ class Board extends React.Component {
             <Square
                 value={this.props.squares[i]}
                 onClick={() => this.props.onClick(i)}
+                number = {"sq"+i}
             />
         );
     }
@@ -50,7 +51,8 @@ class Game extends React.Component {
         this.state = {
             history: [
                 {
-                    squares: Array(9).fill(null)
+                    squares: Array(9).fill(null),
+                    info: Array(9).fill(null),
                 }
             ],
             stepNumber: 0,
@@ -69,41 +71,55 @@ class Game extends React.Component {
         this.setState({
             history: history.concat([
                 {
-                    squares: squares
+                    squares: squares,
+                    info: "Player: " + squares[i] + " | Pos: (" + (Math.floor(i%3)+1) + ", " +(Math.floor(i/3)+1) + ")",
                 }
             ]),
             stepNumber: history.length,
             xIsNext: !this.state.xIsNext
         });
+        var win = calculateWinner(squares);
+        if(win){
+            //log(win[0]);
+            //log(this.state.history[this.state.stepNumber].squares[win[0]]);
+            for(let i = 0; i < 3; i++)
+                document.getElementById("sq" + win[i]).style.background = "#ccc";
+        }
     }
 
     jumpTo(step) {
-        this.setState({
-            stepNumber: step,
-            xIsNext: (step % 2) === 0
-        });
+        if(this.state.stepNumber !== step) {
+            for (let i = 0; i < 9; i++)
+                document.getElementById("sq" + i).style.background = null;
+            this.setState({
+                stepNumber: step,
+                xIsNext: (step % 2) === 0
+            });
+        }
     }
 
     render() {
         const history = this.state.history;
         const current = history[this.state.stepNumber];
         const winner = calculateWinner(current.squares);
-
         const moves = history.map((step, move) => {
             const desc = move ?
                 'Go to move #' + move :
                 'Go to game start';
             return (
                 <li key={move}>
-                    <button onClick={() => this.jumpTo(move)}>{desc}</button>
+                    <button onClick={() => this.jumpTo(move)}>{desc}</button> {step.info}
                 </li>
             );
         });
 
         let status;
         if (winner) {
-            status = "Winner: " + winner;
-        } else {
+            status = "Winner: " + current.squares[winner[0]];
+        } else if (this.state.stepNumber === 9){
+            status = "We Have A Tie!"
+        }
+        else {
             status = "Next player: " + (this.state.xIsNext ? "X" : "O");
         }
 
@@ -128,6 +144,10 @@ class Game extends React.Component {
 
 ReactDOM.render(<Game />, document.getElementById("root"));
 
+function calculateTie(squares){
+
+}
+
 function calculateWinner(squares) {
     const lines = [
         [0, 1, 2],
@@ -142,12 +162,15 @@ function calculateWinner(squares) {
     for (let i = 0; i < lines.length; i++) {
         const [a, b, c] = lines[i];
         if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-            return squares[a];
+            return [a, b, c];
         }
     }
     return null;
 }
 
+function log(text){
+    document.getElementById("log").innerText += "\n" + text;
+}
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.
